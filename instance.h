@@ -49,6 +49,7 @@ protected:
 	void cleanTempPicture();
 	
 	void notifyFrameDone();
+	void notifyEncoderClosed();
 };
 
 #endif

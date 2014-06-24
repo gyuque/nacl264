@@ -4,7 +4,8 @@
 	var IncomingMessageTypes = {
 		EncodeFrameDone: 'encode-frame-done',
 		SendBufferedData: 'send-buffered-data',
-		SeekBuffer: 'seek-buffer'
+		SeekBuffer: 'seek-buffer',
+		EncoderClosed: 'encoder-closed'
 	};
 
 	var OutgoingMessageTypes = {
@@ -57,6 +58,62 @@
 			frame: ab
 		});
 	}
+	
+	function ExpandableBuffer() {
+		this.ab = new ArrayBuffer(256);
+		this.pos = 0;
+		this.maxPos = 0;
+	}
+	
+	ExpandableBuffer.prototype = {
+		write: function(sourceArrayBuffer) {
+			var write_len = sourceArrayBuffer.byteLength;
+		
+			var required = this.pos + write_len;
+			if (required > this.ab.byteLength) {
+				this.expand(required * 2);
+			}
+			
+			var pRead  = new Uint8Array(sourceArrayBuffer);
+			var pWrite = new Uint8Array(this.ab);
+			for (var i = 0;i < write_len;++i) {
+				pWrite[this.pos++] = pRead[i];
+			}
+			
+			if (this.pos > this.maxPos) {
+				this.maxPos = this.pos;
+			}
+		},
+		
+		seek: function(pos) {
+			this.pos = pos | 0;
+		},
+		
+		expand: function(newLength) {
+			var old = this.ab;
+			var olen = old.byteLength;
+			this.ab = new ArrayBuffer(newLength);
+			
+			var pRead  = new Uint8Array(old);
+			var pWrite = new Uint8Array(this.ab);
+			for (var i = 0;i < olen;++i) {
+				pWrite[i] = pRead[i];
+			}
+		},
+		
+		exportBlob: function() {
+			var exportLen = this.maxPos;
+			var exportBuffer = new ArrayBuffer(exportLen);
+			var pWrite = new Uint8Array(exportBuffer);
+			var pRead  = new Uint8Array(this.ab);
+			
+			for (var i = 0;i < exportLen;++i) {
+				pWrite[i] = pRead[i];
+			}
+			
+			return new Blob([exportBuffer], {type: 'video/x-matroska'});
+		}
+	};
 
 	// export - - - - - - - - - - - - - - - - - - - - - - - - -
 	aGlobal.nacl264 = {
@@ -66,6 +123,7 @@
 		sendFrameFromCanvas: nacl264_sendFrameFromCanvas,
 		
 		IncomingMessageTypes: IncomingMessageTypes,
-		OutgoingMessageTypes: OutgoingMessageTypes
+		OutgoingMessageTypes: OutgoingMessageTypes,
+		ExpandableBuffer: ExpandableBuffer
 	};
 })(window);

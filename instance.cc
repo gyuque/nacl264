@@ -118,10 +118,34 @@ static inline int calcYUV_Y(int r, int g, int b) {
 	const float fG = (float)g / 255.0f;
 	const float fB = (float)b / 255.0f;
 	
-	const float fY = 0.299 * fR + 0.587 * fG + 0.114 * fB;
-	const int iY = fY * 255.0;
+	const float fY = 0.299f * fR + 0.587f * fG + 0.114f * fB;
+	const int iY = fY * 255.0f;
 	
-	return (iY > 255) ? 255 : 0;
+	return (iY > 255) ? 255 : iY;
+}
+
+static inline int calcYUV_U(int r, int g, int b) {
+	const float fR = (float)r / 255.0f;
+	const float fG = (float)g / 255.0f;
+	const float fB = (float)b / 255.0f;
+
+	const float f = -0.14713f*fR - 0.28886f*fG + 0.436f*fB;
+	const int i = (f * 255.0f) + 128;
+	if (i < 0) { return 0; }
+	
+	return (i > 255) ? 255 : i;
+}
+
+static inline int calcYUV_V(int r, int g, int b) {
+	const float fR = (float)r / 255.0f;
+	const float fG = (float)g / 255.0f;
+	const float fB = (float)b / 255.0f;
+
+	const float f = 0.615f*fR - 0.51499f*fG - 0.10001f*fB;
+	const int i = (f * 255.0f) + 128;
+	if (i < 0) { return 0; }
+	
+	return (i > 255) ? 255 : i;
 }
 
 void NaCl264Instance::doSendFrameCommand(pp::VarArrayBuffer& abPictureFrame) {
@@ -167,7 +191,7 @@ void NaCl264Instance::doSendFrameCommand(pp::VarArrayBuffer& abPictureFrame) {
 			const int Y12 = calcYUV_Y(cR12, cG12, cB12);
 			*pY1++ = Y11;
 			*pY1++ = Y12;
-			*pU++ = 0;
+			*pU++ = (calcYUV_U(cR11, cG11, cB11) + calcYUV_U(cR12, cG12, cB12)) >> 1;
 
 			const int cR21 = p[pos2++];
 			const int cG21 = p[pos2++];
@@ -180,7 +204,7 @@ void NaCl264Instance::doSendFrameCommand(pp::VarArrayBuffer& abPictureFrame) {
 			const int Y22 = calcYUV_Y(cR22, cG22, cB22);
 			*pY2++ = Y21;
 			*pY2++ = Y22;
-			*pV++ = 0;
+			*pV++ = (calcYUV_V(cR21, cG21, cB21) + calcYUV_V(cR22, cG22, cB22)) >> 1;
 		}
 		
 		pos1  += pitch;
@@ -219,6 +243,13 @@ void NaCl264Instance::addFrame() {
 void NaCl264Instance::notifyFrameDone() {
 	pp::VarDictionary msg;
 	msg.Set( pp::Var("type") , pp::Var("encode-frame-done") );
+	
+	PostMessage(msg);
+}
+
+void NaCl264Instance::notifyEncoderClosed() {
+	pp::VarDictionary msg;
+	msg.Set( pp::Var("type") , pp::Var("encoder-closed") );
 	
 	PostMessage(msg);
 }
@@ -266,6 +297,7 @@ void NaCl264Instance::doCloseEncoderCommand() {
 	closeEncoder();
 
 	closeOutput();
+	notifyEncoderClosed();
 }
 
 void NaCl264Instance::closeEncoder() {
