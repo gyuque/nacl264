@@ -30,14 +30,14 @@
 		var module = document.getElementById('nacl264-embed');
 		
 		console.log("NaCl module loaded.");
-		nacl264_setEncoderParams(module, {
+		nacl264.setEncoderParams(module, {
 			fps: 30,
 			width: 640,
 			height: 480
 		});
 		
-		nacl264_openEncoder(module);
-		nacl264_sendFrameFromCanvas(module, document.getElementById('cv1') );
+		nacl264.openEncoder(module);
+		nacl264.sendFrameFromCanvas(module, document.getElementById('cv1') );
 	}
 	
 	function handleMessage(message_event) {
@@ -45,60 +45,26 @@
 		var mbody = message_event.data;
 		var mtype = mbody.type;
 		
+		var M = nacl264.IncomingMessageTypes;
 		switch(mtype) {
-		case 'encode-frame-done':
+		case M.EncodeFrameDone:
 			console.log("DONE");
 			if (++gFrameCount < 130) {
-				nacl264_sendFrameFromCanvas(module, document.getElementById('cv1') );
+				nacl264.sendFrameFromCanvas(module, document.getElementById('cv1') );
 			} else {
-				nacl264_closeEncoder(module);
+				nacl264.closeEncoder(module);
 			}
 			
 			break;
-		}
-	}
-	
-	function nacl264_setEncoderParams(module, params) {
-		module.postMessage({
-			command: "set-params",
-			params: params
-		});
-	}
 
-	function nacl264_openEncoder(module) {
-		module.postMessage({command: "open-encoder"});
-	}
+		case M.SendBufferedData:
+			console.log("SendBufferedData");
+			break;
 
-	function nacl264_closeEncoder(module) {
-		module.postMessage({command: "close-encoder"});
-	}
-	
-	function nacl264_sendFrameFromCanvas(module, canvas) {
-		var g = canvas.getContext('2d');
-		var w = canvas.width | 0;
-		var h = canvas.height | 0;
-		
-		var idat = g.getImageData(0, 0, w, h);
-		var pixels = idat.data;
-		var len = w*3 * h;
-		
-		var ab = new ArrayBuffer(len);
-		var u8_array = new Uint8Array(ab);
-		var readPos = 0;
-		var writePos = 0;
-		for (var y = 0;y < h;++y) {
-			for (var x = 0;x < w;++x) {
-				u8_array[writePos++] = pixels[readPos++];
-				u8_array[writePos++] = pixels[readPos++];
-				u8_array[writePos++] = pixels[readPos++];
-				++readPos;
-			}
+		case M.SeekBuffer:
+			console.log("SeekBuffer", mbody.position - 0);
+			break;
 		}
-		
-		module.postMessage({
-			command: "send-frame",
-			frame: ab
-		});
 	}
 	
 	listenNaClEvents();
