@@ -20,6 +20,8 @@ public:
 	virtual ~NaCl264Instance();
 	virtual void HandleMessage(const pp::Var& var_message);
 	
+	void sendBufferedData(const void *buf, size_t size);
+	void sendBufferSeek(long pos);
 protected:
 	int mNextPTS;
 	

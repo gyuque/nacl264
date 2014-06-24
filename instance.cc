@@ -275,13 +275,38 @@ void NaCl264Instance::closeEncoder() {
 	}
 }
 
-// buffer writer
+void NaCl264Instance::sendBufferedData(const void *buf, size_t size) {
+	pp::VarArrayBuffer ab((uint32_t)size);
+	unsigned char* pWrite = static_cast<unsigned char*>(ab.Map());
+
+	memcpy(pWrite, buf, size);
+
+	// Send
+	pp::VarDictionary dic;
+	dic.Set( pp::Var("content"), ab );
+	dic.Set( pp::Var("type"), pp::Var("send-buffered-data") );
+	PostMessage(dic);
+
+	ab.Unmap();
+}
+
+void NaCl264Instance::sendBufferSeek(long pos) {
+	pp::VarDictionary dic;
+	dic.Set( pp::Var("position"), pp::Var((int32_t)pos) );
+	dic.Set( pp::Var("type"), pp::Var("seek-buffer") );
+
+	PostMessage(dic);
+}
+
+// bridge functions
 size_t mkFlush(const void *buf, size_t size, void* user_data) {
-	printf(" mkFlush [%u]\n",size);
+	NaCl264Instance* that = static_cast<NaCl264Instance*>(user_data);
+	that->sendBufferedData(buf, size);
 	return size;
 }
 
 size_t mkSeek(long pos, void* user_data) {
-	printf(" mkSeek [%ld]\n",pos);
+	NaCl264Instance* that = static_cast<NaCl264Instance*>(user_data);
+	that->sendBufferSeek(pos);
 	return 0;
 }
