@@ -184,7 +184,7 @@ static int mk_flush_context_data( mk_context *c )
     if( c->parent )
         CHECK( mk_append_context_data( c->parent, c->data, c->d_cur ) );
     else if (!c->owner->fp) {
-        printf("WRITE CONTENT: %d\n", c->d_cur);
+        // printf("WRITE CONTENT: %d\n", c->d_cur);
         if (c->owner->flush_proc) {
             c->owner->flush_proc(c->data, c->d_cur, c->owner->proc_user_data);
         }

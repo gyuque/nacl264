@@ -1,3 +1,7 @@
+// nacl264 - x264 on Google Native Client
+// 2014.06 Satoshi Ueyama
+// distributed under GPL
+
 (function(aGlobal) {
 	'use strict';
 

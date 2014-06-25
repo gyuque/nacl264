@@ -1,3 +1,7 @@
+// nacl264 - x264 on Google Native Client
+// 2014.06 Satoshi Ueyama
+// distributed under GPL
+
 #include "instance.h"
 #include <stdio.h>
 #include <math.h>
@@ -14,7 +18,6 @@ public:
 
 namespace pp {
 	Module* CreateModule() {
-//		sCLIOutput = mkv_output;
 		return new NaCl264Module();
 	}
 }
