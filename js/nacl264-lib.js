@@ -110,7 +110,7 @@
 			}
 		},
 		
-		exportBlob: function() {
+		exportBlob: function(mime) {
 			var exportLen = this.maxPos;
 			var exportBuffer = new ArrayBuffer(exportLen);
 			var pWrite = new Uint8Array(exportBuffer);
@@ -120,7 +120,7 @@
 				pWrite[i] = pRead[i];
 			}
 			
-			return new Blob([exportBuffer], {type: 'video/x-matroska'});
+			return new Blob([exportBuffer], {type: mime || 'video/mp4'});
 		}
 	};
 

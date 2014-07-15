@@ -154,7 +154,7 @@
 	}
 	
 	function makeSaveLink() {
-		var blob = gOutBuffer.exportBlob();
+		var blob = gOutBuffer.exportBlob(USE_MP4 ? null : 'video/x-matroska');
 		
 		var a = document.getElementById('result-dl');
 		a.style.display = 'block';
