@@ -14,6 +14,11 @@ extern "C" {
 #include "output/output.h"
 }
 
+typedef enum {
+	kContainerTypeMKV  = 0,
+	kContainerTypeMP4  = 1
+} ContainerType;
+
 class NaCl264Instance : public pp::Instance {
 public:
 	explicit NaCl264Instance(PP_Instance instance);
@@ -21,13 +26,14 @@ public:
 	virtual void HandleMessage(const pp::Var& var_message);
 	
 	void sendBufferedData(const void *buf, size_t size);
-	void sendBufferSeek(long pos);
+	int sendBufferSeek(long pos, int seek_origin);
 protected:
 	int mNextPTS;
 	
 	int mMaxPTS;
 	int mSecondPTS;
 	
+	ContainerType mContainerType;
 	x264_t* mX264;
 	hnd_t mOutHandle;
 	x264_param_t mEncoderParams;

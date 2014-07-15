@@ -29,6 +29,11 @@
 
 #include "output.h"
 #include <lsmash.h>
+static lsmash_root_t *lsmash_open_custom( lsmash_file_mode mode );
+
+static mp4CustomWriteFunction s_customWrite = NULL;
+static mp4CustomSeekFunction  s_customSeek  = NULL;
+static void*                  s_customOpaque = NULL;
 
 #define H264_NALU_LENGTH_SIZE 4
 
@@ -164,6 +169,11 @@ static int open_file( char *psz_filename, hnd_t *p_handle, cli_output_opt_t *opt
     *p_handle = NULL;
 
     int b_regular = strcmp( psz_filename, "-" );
+    const int b_custom = !strcmp( psz_filename, "+" );
+    if ( b_custom ) {
+        b_regular = 0;
+    }
+    
     b_regular = b_regular && x264_is_regular_file_path( psz_filename );
     if( b_regular )
     {
@@ -181,7 +191,11 @@ static int open_file( char *psz_filename, hnd_t *p_handle, cli_output_opt_t *opt
     p_mp4->b_fragments    = !b_regular;
     p_mp4->b_stdout       = !strcmp( psz_filename, "-" );
 
-    p_mp4->p_root = lsmash_open_movie( psz_filename, p_mp4->b_fragments ? LSMASH_FILE_MODE_WRITE_FRAGMENTED : LSMASH_FILE_MODE_WRITE );
+    if (b_custom) {
+        p_mp4->p_root = lsmash_open_custom( p_mp4->b_fragments ? LSMASH_FILE_MODE_WRITE_FRAGMENTED : LSMASH_FILE_MODE_WRITE );
+    } else {
+        p_mp4->p_root = lsmash_open_movie( psz_filename, p_mp4->b_fragments ? LSMASH_FILE_MODE_WRITE_FRAGMENTED : LSMASH_FILE_MODE_WRITE );
+    }
     MP4_FAIL_IF_ERR_EX( !p_mp4->p_root, "failed to create root.\n" );
 
     p_mp4->summary = (lsmash_video_summary_t *)lsmash_create_summary( LSMASH_SUMMARY_TYPE_VIDEO );
@@ -414,6 +428,96 @@ static int write_frame( hnd_t handle, uint8_t *p_nalu, int i_size, x264_picture_
     p_mp4->i_numframe++;
 
     return i_size;
+}
+
+// Custom stream
+
+
+
+static int lsmash_set_custom_param
+(
+ int                       open_mode,
+ lsmash_file_parameters_t *param
+ )
+{
+    if( !param )
+        return -1;
+    char mode[4] = { 0 };
+    lsmash_file_mode file_mode;
+    file_mode = LSMASH_FILE_MODE_WRITE
+    | LSMASH_FILE_MODE_BOX
+    | LSMASH_FILE_MODE_INITIALIZATION
+    | LSMASH_FILE_MODE_MEDIA;
+    
+    if( open_mode == 0 )
+    {
+        memcpy( mode, "w+b", 4 );
+    }
+#ifdef LSMASH_DEMUXER_ENABLED
+    else if( open_mode == 1 )
+    {
+        memcpy( mode, "rb", 3 );
+        file_mode = LSMASH_FILE_MODE_READ;
+    }
+#endif
+    if( !mode[0] )
+        return -1;
+    
+    memset( param, 0, sizeof(lsmash_file_parameters_t) );
+    param->mode                = file_mode;
+    param->opaque              = s_customOpaque;
+    param->read                = NULL;
+    param->write               = s_customWrite;
+    param->seek                = s_customSeek;
+    param->major_brand         = 0;
+    param->brands              = NULL;
+    param->brand_count         = 0;
+    param->minor_version       = 0;
+    param->max_chunk_duration  = 0.5;
+    param->max_async_tolerance = 2.0;
+    param->max_chunk_size      = 4 * 1024 * 1024;
+    param->max_read_size       = 4 * 1024 * 1024;
+    return 0;
+}
+
+
+static lsmash_root_t *lsmash_open_custom( lsmash_file_mode mode )
+{
+    int open_mode = -1;
+    if( mode & LSMASH_FILE_MODE_WRITE )
+        open_mode = 0;
+#ifdef LSMASH_DEMUXER_ENABLED
+    else if( mode & LSMASH_FILE_MODE_READ )
+        open_mode = 1;
+#endif
+    if( open_mode < 0 )
+        return NULL;
+    lsmash_root_t *root = lsmash_create_root();
+    if( !root )
+        return NULL;
+    lsmash_file_parameters_t param;
+    lsmash_set_custom_param(open_mode, &param);    
+    param.mode |= mode;
+    lsmash_file_t *file = lsmash_set_file( root, &param );
+    if( !file || (open_mode == 1 && lsmash_read_file( file, &param ) < 0) )
+    {
+        lsmash_close_file( &param );
+        lsmash_destroy_root( root );
+        return NULL;
+    }
+    
+    /* Don't fclose() here. */
+    param.opaque = NULL;
+    lsmash_close_file( &param );
+    
+    return root;
+}
+
+
+void mp4_set_buffer_writer(mp4CustomWriteFunction write_f, mp4CustomSeekFunction seek_f, void* opaque) {
+    s_customWrite = write_f;
+    s_customSeek = seek_f;
+    s_customOpaque = opaque;
 }
 
 const cli_output_t mp4_output = { open_file, set_param, write_headers, write_frame, close_file };

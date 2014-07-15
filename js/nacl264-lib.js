@@ -16,7 +16,8 @@
 		SetParams: 'set-params',
 		OpenEncoder: 'open-encoder',
 		CloseEncoder: 'close-encoder',
-		SendFrame: 'send-frame'
+		SendFrame: 'send-frame',
+		SetOutputType: 'set-output-type'
 	};
 
 
@@ -25,6 +26,10 @@
 			command: OutgoingMessageTypes.SetParams,
 			params: params
 		});
+	}
+
+	function nacl264_setOutputType(module, typeString) {
+		module.postMessage({command: OutgoingMessageTypes.SetOutputType, type: typeString});
 	}
 
 	function nacl264_openEncoder(module) {
@@ -125,6 +130,7 @@
 		openEncoder:         nacl264_openEncoder,
 		closeEncoder:        nacl264_closeEncoder,
 		sendFrameFromCanvas: nacl264_sendFrameFromCanvas,
+		setOutputType:       nacl264_setOutputType,
 		
 		IncomingMessageTypes: IncomingMessageTypes,
 		OutgoingMessageTypes: OutgoingMessageTypes,

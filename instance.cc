@@ -8,10 +8,13 @@ static cli_output_t sCLIOutput;
 extern "C" {
 #include "output/matroska_ebml.h"
 int mk_set_buffer_writer(hnd_t handle, mk_flush_proc fp, mk_seek_proc sp, void* user_data);
+void mp4_set_buffer_writer(mp4CustomWriteFunction write_f, mp4CustomSeekFunction seek_f, void* opaque);
 }
 
 static size_t mkFlush(const void *buf, size_t size, void* user_data);
 static size_t mkSeek(long pos, void* user_data);
+static int mp4WriteBuffer(void *opaque, uint8_t *buf, int size);
+static int64_t mp4SeekBuffer(void *opaque, int64_t offset, int whence);
 
 // Tiny logger implementation
 extern "C" void x264_cli_log( const char *name, int i_level, const char *fmt, ... ) {
@@ -31,6 +34,7 @@ NaCl264Instance::NaCl264Instance(PP_Instance instance) :
 	sCLIOutput = mkv_output;
 	x264_param_default(&mEncoderParams);
 	
+	mContainerType = kContainerTypeMKV;
 	mEncoderParams.i_fps_num = 30;
 	mEncoderParams.i_fps_den = 1;
 	mEncoderParams.i_width = 320;
@@ -167,7 +171,14 @@ static inline int calcYUV_V(int r, int g, int b) {
 }
 
 void NaCl264Instance::doSetOutputTypeCommand(const pp::Var& vstrType) {
-	
+	const std::string& s = vstrType.AsString();
+	if (s.at(2) == '4') {
+		puts("Change container type to 'mp4'");
+		mContainerType = kContainerTypeMP4;
+	} else {
+		puts("Change container type to 'mkv'");
+		mContainerType = kContainerTypeMKV;
+	}
 }
 
 void NaCl264Instance::doSendFrameCommand(pp::VarArrayBuffer& abPictureFrame) {
@@ -300,11 +311,20 @@ void NaCl264Instance::doOpenEncoderCommand() {
 void NaCl264Instance::openBufferOutput() {
 	char outFilename[2] = "+";
 
+    if (mContainerType == kContainerTypeMP4) {
+		mp4_set_buffer_writer(mp4WriteBuffer, mp4SeekBuffer, this);
+		sCLIOutput = mp4_output;
+	} else {
+		sCLIOutput = mkv_output;
+	}
+
 	cli_output_opt_t output_opt;
 	output_opt.use_dts_compress = 0;
 	sCLIOutput.open_file(outFilename, &mOutHandle, &output_opt );
-    
-	mk_set_buffer_writer(mOutHandle, mkFlush, mkSeek, this);
+
+    if (mContainerType == kContainerTypeMKV) {
+		mk_set_buffer_writer(mOutHandle, mkFlush, mkSeek, this);
+	}
 }
 
 void NaCl264Instance::closeOutput() {
@@ -344,12 +364,18 @@ void NaCl264Instance::sendBufferedData(const void *buf, size_t size) {
 	ab.Unmap();
 }
 
-void NaCl264Instance::sendBufferSeek(long pos) {
+int NaCl264Instance::sendBufferSeek(long pos, int seek_origin) {
+	if (seek_origin != SEEK_SET) {
+		puts("** WARNING! bad seek origin **");
+		return -1;
+	}
+	
 	pp::VarDictionary dic;
 	dic.Set( pp::Var("position"), pp::Var((int32_t)pos) );
 	dic.Set( pp::Var("type"), pp::Var("seek-buffer") );
 
 	PostMessage(dic);
+	return 0;
 }
 
 // bridge functions
@@ -361,6 +387,15 @@ size_t mkFlush(const void *buf, size_t size, void* user_data) {
 
 size_t mkSeek(long pos, void* user_data) {
 	NaCl264Instance* that = static_cast<NaCl264Instance*>(user_data);
-	that->sendBufferSeek(pos);
-	return 0;
+	return (size_t)that->sendBufferSeek(pos, SEEK_SET);
 }
+
+int mp4WriteBuffer(void *opaque, uint8_t *buf, int size) {
+	return mkFlush(buf, size, opaque); 
+}
+
+int64_t mp4SeekBuffer(void *opaque, int64_t offset, int whence) {
+	NaCl264Instance* that = static_cast<NaCl264Instance*>(opaque);
+	return (int64_t)that->sendBufferSeek(offset, whence);
+}
+

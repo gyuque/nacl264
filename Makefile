@@ -72,8 +72,8 @@ SOURCES = nacl264.cc \
           x264/encoder/ratecontrol.c \
           x264/encoder/set.c \
           x264/output/matroska.c \
-          x264/output/matroska_ebml_b.c \
           x264/output/mp4_lsmash.c \
+          x264/output/matroska_ebml_b.c \
           $(LSMASH_SRC)
 
 

@@ -1,4 +1,6 @@
 (function() {
+	var USE_MP4 = true;
+	
 	var gFrameCount = 0;
 	var gBallX  = 90;
 	var gBallY  = -90;
@@ -20,12 +22,24 @@
 		g.fillText("Encoded frame "+frameIndex, 8, 34);
 	}
 	
+	function drawTestPattern(g) {
+		g.fillStyle = "#000";
+		g.fillRect(0, 0, 800, 600);
+		
+		g.fillStyle = "#fff";
+		for (var i = 0;i < 30;++i) {
+			g.fillRect(20, 20 + i*2, 110, 1);
+			g.fillRect(130, 21 + i*2, 110, 1);
+			g.fillRect(240, 21 + i*3, 110, 1);
+		}
+	}
+	
 	function drawTestPicture() {
 		var baseY = 390;
 		var ballRadius = 60;
 		var cv = document.getElementById('cv1');
 		var g = cv.getContext('2d');
-		
+//return drawTestPattern(g);
 		var fg = window.floorGradient;
 		var wg = window.wallGradient;
 		var bg = window.ballGradient;
@@ -102,6 +116,7 @@
 		});
 		
 		drawTestPicture();
+		nacl264.setOutputType(module, USE_MP4 ? 'mp4' : 'mkv');
 		nacl264.openEncoder(module);
 		nacl264.sendFrameFromCanvas(module, document.getElementById('cv1') );
 	}
@@ -144,7 +159,25 @@
 		var a = document.getElementById('result-dl');
 		a.style.display = 'block';
 		a.href = window.URL.createObjectURL(blob);
-		a.setAttribute('download', 'nacl264-generated.mkv');
+		a.setAttribute('download', 'nacl264-generated.' + (USE_MP4 ? 'mp4' : 'mkv'));
+		
+		if (USE_MP4) {
+			showPreviewVideo(a.href);
+		}
+	}
+	
+	function showPreviewVideo(videoURL) {
+		var container = document.getElementById('preview-cell');
+		var v = document.createElement('video');
+
+		container.appendChild(v);
+		v.src = videoURL;
+		v.autoplay = 'autoplay';
+		v.controls = 'controls';
+
+		var source_canvas = document.getElementById('cv1');
+		v.width = source_canvas.width | 0;
+		v.height = source_canvas.height | 0;
 	}
 	
 	listenNaClEvents();
