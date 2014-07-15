@@ -17,7 +17,32 @@ DEPS = ppapi_simple
 LIBS = ppapi_simple ppapi_cpp ppapi
 NACL_CFLAGS = -Wno-long-long
 
-CFLAGS = -Wall -I./x264
+LSMASH_SRC = lsmash/core/box.c      \
+             lsmash/core/chapter.c  \
+             lsmash/core/fragment.c \
+             lsmash/core/isom.c     \
+             lsmash/core/meta.c     \
+             lsmash/core/print.c    \
+             lsmash/core/read.c     \
+             lsmash/core/summary.c  \
+             lsmash/core/timeline.c \
+             lsmash/core/write.c    \
+             lsmash/codecs/a52.c         \
+             lsmash/codecs/description.c \
+             lsmash/codecs/h264.c        \
+             lsmash/codecs/mp4a.c        \
+             lsmash/codecs/vc1.c         \
+             lsmash/codecs/alac.c        \
+             lsmash/codecs/dts.c         \
+             lsmash/codecs/hevc.c        \
+             lsmash/codecs/mp4sys.c      \
+             lsmash/common/alloc.c   \
+             lsmash/common/bstream.c \
+             lsmash/common/list.c    \
+             lsmash/common/utils.c
+
+
+CFLAGS = -Wall -I./x264 -I./lsmash -DLSMASH_DEMUXER_ENABLED
 SOURCES = nacl264.cc \
           instance.cc \
           x264/common/bitstream.c \
@@ -47,7 +72,9 @@ SOURCES = nacl264.cc \
           x264/encoder/ratecontrol.c \
           x264/encoder/set.c \
           x264/output/matroska.c \
-          x264/output/matroska_ebml_b.c
+          x264/output/matroska_ebml_b.c \
+          x264/output/mp4_lsmash.c \
+          $(LSMASH_SRC)
 
 
 .PHONY: serve2

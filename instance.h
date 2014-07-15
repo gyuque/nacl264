@@ -42,6 +42,7 @@ protected:
 	void doOpenEncoderCommand();
 	void doCloseEncoderCommand();
 	void doSendFrameCommand(pp::VarArrayBuffer& abPictureFrame);
+	void doSetOutputTypeCommand(const pp::Var& vstrType);
 	
 	void openBufferOutput();
 	void addFrame();

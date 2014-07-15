@@ -48,4 +48,7 @@ extern const cli_output_t mkv_output;
 extern const cli_output_t mp4_output;
 extern const cli_output_t flv_output;
 
+typedef int (*mp4CustomWriteFunction) (void *opaque, uint8_t *buf, int size);
+typedef int64_t (*mp4CustomSeekFunction)(void *opaque, int64_t offset, int whence);
+
 #endif

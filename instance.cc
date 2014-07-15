@@ -13,6 +13,15 @@ int mk_set_buffer_writer(hnd_t handle, mk_flush_proc fp, mk_seek_proc sp, void* 
 static size_t mkFlush(const void *buf, size_t size, void* user_data);
 static size_t mkSeek(long pos, void* user_data);
 
+// Tiny logger implementation
+extern "C" void x264_cli_log( const char *name, int i_level, const char *fmt, ... ) {
+	va_list arg;
+	va_start( arg, fmt );
+	vprintf(fmt, arg);
+	va_end( arg );
+}
+
+// x264 Binding - - - - - - - -
 NaCl264Instance::NaCl264Instance(PP_Instance instance) : 
 	pp::Instance(instance),
 	mNextPTS(0),mMaxPTS(0),mSecondPTS(0),
@@ -86,6 +95,11 @@ void NaCl264Instance::dispatchCommand(const std::string& cmdName, const pp::VarD
 			pp::VarArrayBuffer ab(vFrame);
 			doSendFrameCommand(ab);
 		}
+	} else if (cmdName.compare("set-output-type") == 0) {
+		pp::Var vType = msg_dic.Get("type");
+		if (vType.is_string()) {
+			doSetOutputTypeCommand(vType);
+		}
 	}
 }
 
@@ -150,6 +164,10 @@ static inline int calcYUV_V(int r, int g, int b) {
 	if (i < 0) { return 0; }
 	
 	return (i > 255) ? 255 : i;
+}
+
+void NaCl264Instance::doSetOutputTypeCommand(const pp::Var& vstrType) {
+	
 }
 
 void NaCl264Instance::doSendFrameCommand(pp::VarArrayBuffer& abPictureFrame) {
