@@ -32,7 +32,8 @@ NaCl264Instance::NaCl264Instance(PP_Instance instance) :
 	mOutHandle(NULL),
 	mTempPictureReady(false) {
 	sCLIOutput = mkv_output;
-	x264_param_default(&mEncoderParams);
+	//x264_param_default(&mEncoderParams);
+	x264_param_default_preset(&mEncoderParams, "fast", "grain");
 	
 	mContainerType = kContainerTypeMKV;
 	mEncoderParams.i_fps_num = 30;
@@ -41,6 +42,9 @@ NaCl264Instance::NaCl264Instance(PP_Instance instance) :
 	mEncoderParams.i_height = 240;
 	mEncoderParams.b_annexb = 0;
 	mEncoderParams.b_repeat_headers = 0;
+	mEncoderParams.i_keyint_max = 50;
+	
+	x264_param_apply_profile(&mEncoderParams, "main");
 }
 		
 NaCl264Instance::~NaCl264Instance() {

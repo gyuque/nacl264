@@ -2,7 +2,7 @@
 	var USE_MP4 = true;
 	
 	var gFrameCount = 0;
-	var gBallX  = 90;
+	var gBallX  = 9;
 	var gBallY  = -90;
 	var gBallYa = 0;
 	var gOutBuffer = new nacl264.ExpandableBuffer();
@@ -95,7 +95,7 @@
 		g.fill();
 		g.restore();
 
-		gBallX += 2;
+		gBallX += 1.5;
 		gBallY += gBallYa;
 		if (gBallY > baseY) {
 			gBallY = baseY;
@@ -129,7 +129,7 @@
 		var M = nacl264.IncomingMessageTypes;
 		switch(mtype) {
 		case M.EncodeFrameDone:
-			if (++gFrameCount <= 240) {
+			if (++gFrameCount <= 600) {
 				drawTestPicture();
 				nacl264.sendFrameFromCanvas(module, document.getElementById('cv1') );
 				drawLabel(gFrameCount-1);
