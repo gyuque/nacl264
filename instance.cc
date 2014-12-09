@@ -277,6 +277,14 @@ void NaCl264Instance::addFrame() {
 	notifyFrameDone();
 }
 
+void NaCl264Instance::flushEncoder() {
+	x264_picture_t out_pic;
+	x264_nal_t *nal;
+	int i_nal;
+
+	x264_encoder_encode(mX264, &nal, &i_nal, NULL, &out_pic);
+}
+
 void NaCl264Instance::notifyFrameDone() {
 	pp::VarDictionary msg;
 	msg.Set( pp::Var("type") , pp::Var("encode-frame-done") );
@@ -339,6 +347,7 @@ void NaCl264Instance::closeOutput() {
 }
 
 void NaCl264Instance::doCloseEncoderCommand() {
+	flushEncoder();
 	cleanTempPicture();
 	closeEncoder();
 

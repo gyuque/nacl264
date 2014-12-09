@@ -41,6 +41,7 @@ protected:
 	bool mTempPictureReady;
 
 	void closeEncoder();
+	void flushEncoder();
 	void closeOutput();
 	
 	void dispatchCommand(const std::string& cmdName, const pp::VarDictionary& msg_dic);

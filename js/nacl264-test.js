@@ -2,7 +2,7 @@
 	var USE_MP4 = true;
 	
 	var gFrameCount = 0;
-	var gBallX  = 9;
+	var gBallX  = -19;
 	var gBallY  = -90;
 	var gBallYa = 0;
 	var gOutBuffer = new nacl264.ExpandableBuffer();
@@ -95,7 +95,7 @@
 		g.fill();
 		g.restore();
 
-		gBallX += 1.5;
+		gBallX += 1.25;
 		gBallY += gBallYa;
 		if (gBallY > baseY) {
 			gBallY = baseY;
