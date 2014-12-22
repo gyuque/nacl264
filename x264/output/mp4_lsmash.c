@@ -188,7 +188,7 @@ static int open_file( char *psz_filename, hnd_t *p_handle, cli_output_opt_t *opt
 
     p_mp4->b_dts_compress = opt->use_dts_compress;
     p_mp4->b_use_recovery = 0; // we don't really support recovery
-    p_mp4->b_fragments    = !b_regular;
+    p_mp4->b_fragments    = !b_regular && !b_custom; // When b_custom is set, DO NOT be fragments.
     p_mp4->b_stdout       = !strcmp( psz_filename, "-" );
 
     if (b_custom) {
